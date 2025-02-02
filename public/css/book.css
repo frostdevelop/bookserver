@@ -1,0 +1,197 @@
+/*@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');*/
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+html {
+	color-scheme: dark;
+}
+
+:root {
+  --fontmain: 'Poppins',-apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --layer0: #121212;
+  --layer1: #1c1c1c;
+  --layer2: #232323;
+  --layer3: #2e2e2e;
+  --layer4: #333333;
+  --layer5: #404040;
+  --maincolor: #3d54ff;
+  --mainhcolor: #6678ff;
+  --lightshadow: rgba(0,0,0,0.4) 0px 10px 20px;
+  --bevel: #2e2e2e 0px 1px 0 inset;
+}
+
+::-webkit-scrollbar {width: 10px;}
+::-webkit-scrollbar-track {
+  background: var(--layer2); /* calc(var(--layer)+#1111) */
+}
+::-webkit-scrollbar-thumb {
+  background: var(--layer4);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {background:var(--layer5);}
+::-webkit-scrollbar-thumb:active {box-shadow: 0 0 10px var(--maincolor);}
+
+body {
+	background: var(--layer0);
+	font-family: var(--fontmain);
+	margin: 0 50px;
+	padding: 10px 0;
+	overflow-x: hidden;
+	color: #ffffff;
+	animation: riseIn .4s ease-out;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes riseIn {
+  0% { opacity: 0; transform: translate(0px,30px)}
+  100% { opacity: 1; transform: translate(0px,0px)}
+}
+
+h1 {
+	text-align: center;
+	font-size: 50px;
+	margin: 10px;
+}
+
+a, button, input[type="text"], input[type="number"], input[type="password"], .item {
+	display: inline-block;
+	border-radius: 5px;
+	border: var(--layer2) solid 2px;
+	background: var(--layer1);
+	color: var(--maincolor);
+	box-shadow: var(--lightshadow), var(--bevel);
+	padding: 8px;
+	transition: box-shadow .4s ease-in-out, color .1s ease-in-out, transform .2s ease-in-out, border-color .4s ease-in-out;
+}
+
+a:hover,button:hover {
+	box-shadow: var(--mainhcolor) 0px 12px 20px;
+	transform: scale(1.02);
+	border-color: var(--maincolor);
+	color: var(--mainhcolor);
+}
+input:focus,button:focus {outline: none;}
+button,input {font-size: 20px;font-weight:bold;}
+input{font-weight:200;color: white !important;}
+
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+input[type="text"],input[type="password"],.marright{margin-right: 20px;}
+
+.marbot {
+    margin-bottom: 10px;
+}
+
+.item {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-between;
+    align-content: center;
+    align-items: center;
+}
+
+label {
+    display: flex;
+    align-content: center;
+    justify-content: flex-start;
+    align-items: center;
+}
+button:active,a:active {
+	transform: scale(1.03);
+	box-shadow: var(--mainhcolor) 0px 20px 50px;
+}
+button{cursor: pointer;}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+.book {
+	margin: 10px 0;
+	display: block;
+	width: 100%;
+}
+.book a {
+	text-decoration: none;
+	width: 100%;
+	text-align: center;
+	box-sizing: border-box;
+}
+
+#caption {
+	text-align: center;
+	display: block;
+	font-size: 20px;
+	font-weight: 200;
+	margin-bottom: 20px;
+}
+
+footer {
+	color: grey;
+	font-size: 13px;
+	font-weight: 300;
+	margin: 20px 0;
+}
+hr {border-color: var(--layer0);margin: 30px 0;}
+h3 {font-size: 30px;margin: 10px 0;font-weight:200;}
+.login {
+	border: var(--layer2) solid 2px;
+    width: 500px;
+    border-radius: 20px;
+    padding: 40px 20px;
+    box-shadow: var(--lightshadow),var(--bevel);
+	margin: 20px;
+	background: var(--layer0);
+}
+.logincontainer {
+	display: flex;
+    align-content: center;
+    flex-direction: column;
+    align-items: center;
+    /*margin: 20vh 0;*/
+	justify-content: center;
+	height: 100vh;
+	width: 100vw;
+	position: absolute;
+	left:0;
+	top:0;
+	backdrop-filter: blur(10px) brightness(0.3);
+	animation: fadeIn .8s ease-in-out;
+}
+.mainback {background-image: url("/img/background.jpg");background-repeat: no-repeat;background-size: cover;animation: none !important;} /*https://4kwallpapers.com/images/walls/thumbs_3t/14933.jpg*/
+
+h2 {
+    font-size: 40px;
+    margin: 10px 0;
+}
+.bigbtn {
+	font-size: 30px;
+	padding: 20px;
+	font-weight: 800;
+	text-decoration: none;
+	background: rgba(0,0,0,0.3);
+}
+.panel {
+	position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 500px;
+    overflow-y: auto;
+    max-height: 600px;
+    resize: both;
+    padding: 10px;
+    border: var(--layer1) solid 2px;
+    border-radius: 10px;
+    backdrop-filter: blur(3px) brightness(0.5);
+	z-index: 99;
+	padding-top: 0;
+	box-shadow: var(--bevel),var(--lightshadow);
+}
+.panel .header {background: var(--layer0);margin: 0 -10px;padding: 20px 10px;cursor:move;user-select: none;}

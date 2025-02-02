@@ -130,4 +130,9 @@ dist
 .pnp.*
 
 # bookserver
-public/book/*
+public/book
+public/transfer
+config
+#requests.log
+#tokenrequests.txt
+logs/*

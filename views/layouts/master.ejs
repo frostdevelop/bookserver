@@ -1,0 +1,7 @@
+<div class="panel" id="pb-AdminPanel"><h2 class="header">Admin Panel</h2><hr><h3>Key Creation</h3><div class="list"><input placeholder="New Key" title="New Key" class="marbot" type="password" id="pb-kc-ncinp"><input placeholder="Maximum Sessions" id="pb-kc-maxinp" type="number" title="Maximum Sessions" value="1" class="marbot" min="1"><label class="marbot">Limited: <input type="checkbox" id="pb-kc-limit" checked /></label><label class="marbot">Master: <input type="checkbox" id="pb-kc-master"/></label><button id="pb-kc-submit">Create</button></div><hr><h3>Ongoing Sessions</h3><div class="list" id="pb-sessionlist">
+    <% for(let i=0;i<sessions.length;i++){ %> <div class="item marbot"><%= sessions[i].key.toString() %>:<%= sessions[i].id.toString() %> <%= keys[sessions[i].key].master ? "MASTER" : "GUEST" %><button class="pb-sessionend" value="<%= sessions[i].key.toString() %>:<%= sessions[i].id.toString() %>">END</button></div> <% } %>
+</div><hr><h3>Valid Keys</h3><div class="list" id="pb-keylist">
+    <% for(let i=0;i<keys.length;i++){ %> 
+        <% if(keys[i]){ %> <div class="item marbot"><%= i.toString() %> <%= keys[i].master ? "MASTER" : "GUEST" %> SESSN:<%= keys[i].usage.toString() %> MAX:<%= keys[i].maxsession.toString() %> <%= keys[i].unlimit ? "UNLIM" : "LIMTD" %> <%= i==curr ? "CURR" : "" %><button class="pb-keyinvalid" value="<%= i.toString() %>">INVALIDATE</button></div> <% } %>
+    <% } %>
+</div></div>
