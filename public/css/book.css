@@ -184,7 +184,7 @@ h2 {
     right: 20px;
     width: 500px;
     overflow-y: auto;
-    max-height: 600px;
+    height: 600px;
     resize: both;
     padding: 10px;
     border: var(--layer1) solid 2px;
