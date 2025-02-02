@@ -62,12 +62,12 @@ keysub.addEventListener('click',async ()=>{
             master: mstchk.checked,
         }),
     });
-    if(res.status == 204){
+    if(res.status == 200){
         const nentry = document.createElement('div');
         nentry.className = 'item marbot';
         const invbtn = document.createElement('button');
         invbtn.className = 'pd-keyinvalid';
-        invbtn.value = keylist.children.length;
+        invbtn.value = await res.text(); //parseInt(keylist[keylist.children.length-1].value)+1
         invbtn.appendChild(document.createTextNode("INVALIDATE"));
         nentry.appendChild(document.createTextNode(invbtn.value + " " + (mstchk.checked ? "MASTER" : "GUEST") + " SESSN:0 MAX:" + sessinp.value + (limchk.checked ? " LIMTD" : " UNLIM")));
         nentry.appendChild(invbtn);

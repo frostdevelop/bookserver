@@ -28,21 +28,16 @@ class keySys{
                 unlimit: !(keyfile.keys[i].limitusage || false),
                 master: (keyfile.keys[i].master || false),
             };
-            /*
-            console.log(keyfile.keys[i].limitusage);
-            console.log(this.keys[i].unlimit);
-            */
         }
     }
     async addSession(key){
-        //const hash = await bcrypt.hash(key,5);
         for(let i=0;i<this.keys.length;i++){
             if(this.keys[i] && this.keys[i].usage < this.keys[i].maxsession){
                 if(await bcrypt.compare(key,this.keys[i].hash)){
                     const token = tokengen(32);
                     this.tokens.push({token: await bcrypt.hash(token,5),key:i,id:this.keys[i].usage});
+                    console.log("Added: "+i.toString() + ":" + this.keys[i].usage.toString());
                     this.keys[i].usage++;
-                    console.log(i.toString() + ":" + this.keys[i].usage.toString());
                     return token;
                 }
             }
@@ -50,16 +45,14 @@ class keySys{
         return null;
     }
     async removeSession(token){
-        //const hash = await bcrypt.hash(token,5);
         for(let i=0;i<this.tokens.length;i++){
             if(await bcrypt.compare(token,this.tokens[i].token)){
                 const tkobj = this.tokens.splice(i,1)[0];
                 const keyobj = this.keys[tkobj.key];
                 if(keyobj){
                     keyobj.unlimit && keyobj.usage--;
-                    //console.log(this.keys[tkobj.key].unlimit);
-                    console.log(tkobj.key.toString() + ":" + keyobj.usage.toString())
                 }
+                console.log("Removed: "+tkobj.key.toString() + ":" + keyobj.usage.toString())
                 return true;
             }
         }
@@ -101,7 +94,6 @@ class keySys{
     }
     async addKey(key,maxsession=1,unlimit=true,master=false){
         const hash = await bcrypt.hash(key,10);
-        console.log(hash);
         this.keys.push({
             hash:hash,
             maxsession:maxsession,
@@ -109,6 +101,7 @@ class keySys{
             master:master,
             usage:0
         });
+        return this.keys.length-1;
     }
     async getSession(token){
         for(let i=0;i<this.tokens.length;i++){
@@ -137,7 +130,6 @@ class keySys{
     }
     removeSessionsOfKey(keyId){
         for(let i=this.tokens.length-1;i>=0;i--){
-            //console.log(this.tokens[i]);
             if(this.tokens[i].key == keyId){this.tokens.splice(i,1);}
         }
     }

@@ -5,15 +5,9 @@ const dotenv = require('dotenv');
 const reqLogMiddleware = require('./depend/logReqs.middleware');
 const keySys = require('./depend/keySys')
 const ejs = require("ejs");
-//console.log(JSON.parse(fs.readFileSync("config/keys.json")));
 var books = [];
 var transfers = [];
-var tokens = [];
 var authsys = new keySys;
-/*
-var temp1usage = 0;
-var masterusage = false;
-*/
 dotenv.config();
 
 if(!process.env.SECRET){console.error('Error: Missing cookie secret!');process.exit(0);}
@@ -53,25 +47,65 @@ function reloadController(req,res){
 	res.status(204).send();
 }
 
-function masterController(req,res){
+async function masterController(req,res){
+	console.log(req.signedCookies['token']+" Requests Master");
 	try{
-		switch(req.body.type){
-			case 0:
-				authsys.addKey(req.body.key,req.body.maxsessions,req.body.unlimit,req.body.master);
-				res.status(204).send();
-				break;
-			case 1:
-				if(authsys.removeToken(req.body.keyId,req.body.id)){
+		if(await authsys.isMaster(req.signedCookies['token'])){
+			switch(req.body.type){
+				case 0:{
+					/*authsys.addKey(req.body.key,req.body.maxsessions,req.body.unlimit,req.body.master).then(ind=>{
+						res.status(200);
+						res.end(ind);
+					});*/
+					res.status(200);
+					res.end((await authsys.addKey(req.body.key,req.body.maxsessions,req.body.unlimit,req.body.master)).toString());
+					const logdata = "["+(new Date()).toISOString()+"] "+req.signedCookies['token']+" :AddKey: "+req.body.key;
+					console.log(logdata);
+					if(process.env.MASTERLOG){
+						fs.appendFile("./logs/master.log",logdata+"\n",err => {
+							if (err) {
+								console.error("Master Log Error: "+err);
+							}
+						});
+					}
+					break;
+				}
+				case 1:{
+					if(authsys.removeToken(req.body.keyId,req.body.id)){
+						res.status(204).send();
+					}else{
+						res.status(400).send();
+					};
+					const logdata = "["+(new Date()).toISOString()+"] "+req.signedCookies['token']+" :RemoveSess: "+req.body.keyId;
+					console.log(logdata);
+					if(process.env.MASTERLOG){
+						fs.appendFile("./logs/master.log",logdata+"\n",err => {
+							if (err) {
+								console.error("Master Log Error: "+err);
+							}
+						});
+					}
+					break;
+				}
+				case 2:{
+					authsys.keys[req.body.ind] = null;
+					await authsys.removeSessionsOfKey(req.body.ind);
 					res.status(204).send();
-				}else{
-					res.status(400).send();
-				};
-				break;
-			case 2:
-				authsys.keys[req.body.ind] = null;
-				authsys.removeSessionsOfKey(req.body.ind);
-				res.status(204).send();
-				break;
+					const logdata = "["+(new Date()).toISOString()+"] "+req.signedCookies['token']+" :RemoveKey: "+req.body.ind.toString();
+					console.log(logdata);
+					if(process.env.MASTERLOG){
+						fs.appendFile("./logs/master.log",logdata+"\n",err => {
+							if (err) {
+								console.error("Master Log Error: "+err);
+							}
+						});
+					}
+					break;
+				}
+			}
+		}else{
+			console.log("Master Denied");
+			res.status(403).send();
 		}
 	}catch(e){
 		console.error("Master Error: " + e.stack);
@@ -82,30 +116,6 @@ function masterController(req,res){
 
 async function authController(req,res){
 	console.log("Authenticating: "+req.body.key);
-	/*
-	switch(req.body.key){
-		case "pacifikykey":
-			if(!masterusage){
-				masterusage=true;
-				const token = "pacifikykey"+Math.ceil(Math.random()*10000).toString();
-				tokens.push(token);
-				res.set("Set-Cookie","token="+token+"; Path=/");
-				res.status(204).send();
-			}
-			break;
-		case "temppublickey":
-			if(temp1usage < 5){
-				temp1usage++;
-				const token = "temppublickey#"+temp1usage.toString()+":"+Math.ceil(Math.random()*10000).toString();
-				tokens.push(token);
-				res.set("Set-Cookie","token="+token+"; Path=/");
-				res.status(204).send();
-			}
-			break;
-		default:
-			break;
-	}
-	*/
 	try{
 		const token = await authsys.addSession(req.body.key);
 		if(token){
@@ -121,18 +131,8 @@ async function authController(req,res){
 }
 
 async function logoutController(req,res){
-	const token = req.signedCookies['token']; //req.cookies.token
+	const token = req.signedCookies['token'];
 	console.log("Logout: "+token);
-	/*
-	if(tokens.includes(token)){
-		if(token.substr(0,12) == "bdtoken69lol"){
-			masterusage=false;
-			tokens.splice(tokens.indexOf(token),1);
-		}else if(token.substr(0,9) == "ptemp691#"){
-			tokens.splice(tokens.indexOf(token),1);
-		}
-	}
-	*/
 	try{
 		if(await authsys.removeSession(token)){
 			res.cookie('token','',{maxAge:Date.now()});
@@ -165,7 +165,6 @@ async function validateUserMiddleware(req,res,next){
 function notFoundController(req,res){
 	res.status(404);
 	res.render("notfound");
-	//res.end('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>404 Not found</title></head><body><h1>Hmmm... Didn\'t find anything ~(^_^)~</h1><span id="caption">Welcome to Project KV31 also known as "The Backrooms"</span><a href="/">Return home?</a><footer>Copyright Frost 2025. CC-BY-SA</footer></body></html>')
 }
 
 function reqController(req,res){
@@ -177,25 +176,11 @@ function reqController(req,res){
 		// done!
 	});
 	res.status(204).send();
-	//res.end('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Successfully requested!</title><link rel="stylesheet" type="text/css" href="book.css"></head><body><h1>Hmmm... Didn\'t find anything ~(^_^)~</h1><footer>Copyright Frost 2025. CC-BY-SA</footer></body></html>');
 }
-
-/*
-function validToken(token){
-	if(tokens.includes(token)){return true}else{return false};
-}
-*/
 
 async function bookController(req,res,next){
 	const token = req.signedCookies['token']; //req.cookies.token
 	console.log("Mainpage Validation:"+token);
-	/*
-	if(validToken(token)){
-		res.end('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Pacific Book Database</title><link rel="icon" href="/favicon.ico"><link rel="stylesheet" type="text/css" href="/book.css"></head><body><h1>Pacific Book Database</h1><span id="caption">Welcome to the Pacific book database portal</span><button id="pb-logoutbtn">Log Out</button><div class="list">' + books + '</div><hr><div class="list">' + transfers + '</div><footer>Copyright Frost 2025. CC-BY-SA</footer><script>const lgoutbtn = document.getElementById("pb-logoutbtn");lgoutbtn.addEventListener("click",()=>{fetch("/session", {method: "DELETE"}).then(res=>{if(res.status==204){window.location.reload();}else{alert("Request Error "+res.status.toString());};});});</script></body></html>')
-	}else{
-		res.end('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Pacific Book Database</title><link rel="icon" href="/favicon.ico"><link rel="stylesheet" type="text/css" href="/book.css"></head><body class="mainback"><div class="logincontainer"><h1>Pacific Book Database</h1><span id="caption">Please Authenticate.</span><div class="login"><h3>Login</h3><input id="keyinput" placeholder="Your Key" type="password"></input><button id="keylogin">Login</button><hr/><h3>Request a key</h3><input id="reqinput" placeholder="Message"></input><button id="reqkey">Request Key</button></div><footer>Copyright Frost 2025. CC-BY-SA</footer></div><script>const loginbtn = document.getElementById("keylogin");const logininp = document.getElementById("keyinput");const reqbtn = document.getElementById("reqkey");const reqinput = document.getElementById("reqinput");reqbtn.addEventListener("click",()=>{fetch("/request",{method: "POST",headers: {"Content-Type": "application/json"},body: JSON.stringify({msg: reqinput.value})}).then(res=>{if(res.status == 204){alert("Message sent!");}else{alert("Error: "+res.status.toString());};});});loginbtn.addEventListener("click",()=>{fetch("/session", {method: "POST",headers: {"Content-Type": "application/json"},body: JSON.stringify({key: logininp.value})}).then(res=>{if(res.status==204){window.location.reload();}else{alert("Invalid KEY!");};});});</script></body></html>')
-	}
-	*/
 	if(token){
 		try{
 			const session = await authsys.getSession(token);
