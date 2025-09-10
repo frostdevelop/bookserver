@@ -163,13 +163,19 @@ async function validateUserMiddleware(req,res,next){
 }
 
 function notFoundController(req,res){
+	let mir = '';
+	if(req.headers['x-frost-mir'] == '1'){
+		mir = '/books';
+	}
 	res.status(404);
-	res.render("notfound");
+	res.render("notfound", {
+		mir:mir,
+	});
 }
 
 function reqController(req,res){
 	console.log("Request message:"+req.body.msg);
-	fs.appendFile("./logs/tokenrequests.txt",`[${(new Date()).toISOString()},${req.socket.remoteAddress} : ${req.body.msg} \n`,err => {
+	fs.appendFile("./logs/tokenrequests.txt",`[${(new Date()).toISOString()},${req.ip} : ${req.body.msg} \n`,err => {
 		if (err) {
 		  console.error("Token Error: "+err);
 		}
@@ -181,6 +187,10 @@ function reqController(req,res){
 async function bookController(req,res,next){
 	const token = req.signedCookies['token']; //req.cookies.token
 	console.log("Mainpage Validation:"+token);
+	let mir = '';
+	if(req.headers['x-frost-mir'] == '1'){
+		mir = '/books';
+	}
 	if(token){
 		try{
 			const session = await authsys.getSession(token);
@@ -192,6 +202,7 @@ async function bookController(req,res,next){
 				sessions: authsys.tokens,
 				keys: authsys.keys,
 				curr: (session ? session.key : null),
+				mir: mir,
 			});
 		}catch(e){
 			console.error("Get session Error: " + e.stack);
@@ -205,6 +216,7 @@ async function bookController(req,res,next){
 			keys: null,
 			sessions: null,
 			master: false,
+			mir: mir,
 		});
 	}
 }

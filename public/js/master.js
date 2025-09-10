@@ -14,7 +14,7 @@ let offsetx = 0;
 let offsety = 0;
 async function endSessionReq(){
     const vals = this.value.split(":");
-    const res = await fetch("/master",{
+    const res = await fetch(frostMir+"/master",{
         method:"POST",
         headers: {"Content-Type": "application/json"},
         body:JSON.stringify({
@@ -30,7 +30,7 @@ async function endSessionReq(){
     }
 }
 async function invalidateKey(){
-    const res = await fetch("/master",{
+    const res = await fetch(frostMir+"/master",{
         method:"POST",
         headers: {"Content-Type": "application/json"},
         body:JSON.stringify({
@@ -51,7 +51,7 @@ document.addEventListener('mousemove',e=>{if(moving){adminpanel.style.top = (e.c
 sessinp.addEventListener('input',()=>{sessinp.value = Math.max(1,parseInt(sessinp.value));});
 keysub.addEventListener('click',async ()=>{
     if(keyinp.value.length == 0){alert("No key entered!");return;}
-    const res = await fetch("/master",{
+    const res = await fetch(frostMir+"/master",{
         method:"POST",
         headers: {"Content-Type": "application/json"},
         body:JSON.stringify({
