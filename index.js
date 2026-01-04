@@ -3,11 +3,13 @@ const fs = require('fs');
 const cookieParse = require('cookie-parser');
 const dotenv = require('dotenv');
 const reqLogMiddleware = require('./depend/logReqs.middleware');
-const keySys = require('./depend/keySys')
+const keySys = require('./depend/keySys');
 const ejs = require("ejs");
-var books = [];
-var transfers = [];
-var authsys = new keySys;
+const PacificShelf = require('./depend/shelf');
+//Later make a sqlite config for different "shelves" on the books
+//Turn library to a class later for routing logic
+const library = [new PacificShelf('Books','book'),new PacificShelf('Transfer','trans')];
+let authsys = new keySys;
 dotenv.config();
 
 if(!process.env.SECRET){console.error('Error: Missing cookie secret!');process.exit(0);}
@@ -24,24 +26,14 @@ if(process.env.PROXY ?? false){
 }
 
 function updFS(){
-	books.length = 0;
-	transfers.length = 0;
-	fs.readdirSync('./public/book/').forEach(file => {
-		if(file == "desktop.ini"){
-			return
-		}
-		books.push(file);
-	})
-
-	fs.readdirSync('./public/transfer/').forEach(file => {
-		if(file == "desktop.ini"){
-			return
-		}
-		transfers.push(file);
-	})
+	library[0].clearBooks();
+	library[1].clearBooks();
+	fs.readdirSync(process.env.BOOKDIR).forEach(file=>library[0].addBook(file));
+	fs.readdirSync(process.env.TRANSDIR).forEach(file=>library[1].addBook(file));
 }
 
 function reloadController(req,res){
+	//Maybe I should require auth here
 	console.log("Reloading files...");
 	updFS();
 	res.status(204).send();
@@ -163,10 +155,7 @@ async function validateUserMiddleware(req,res,next){
 }
 
 function notFoundController(req,res){
-	let mir = '';
-	if(req.headers['x-frost-mir'] == '1'){
-		mir = '/books';
-	}
+	const mir = req.headers['x-frost-mir'] === '1' ? '/books' : '';
 	res.status(404);
 	res.render("notfound", {
 		mir:mir,
@@ -187,17 +176,13 @@ function reqController(req,res){
 async function bookController(req,res,next){
 	const token = req.signedCookies['token']; //req.cookies.token
 	console.log("Mainpage Validation:"+token);
-	let mir = '';
-	if(req.headers['x-frost-mir'] == '1'){
-		mir = '/books';
-	}
+	const mir = req.headers['x-frost-mir'] === '1' ? '/books' : '';
 	if(token){
 		try{
 			const session = await authsys.getSession(token);
 			res.render("main",{
 				verified: (session ? true : false),
-				books: books,
-				transfers: transfers,
+				library: library,
 				master: (session ? authsys.keys[session.key].master : false),
 				sessions: authsys.tokens,
 				keys: authsys.keys,
@@ -211,8 +196,7 @@ async function bookController(req,res,next){
 	}else{
 		res.render("main",{
 			verified: false,
-			books: null,
-			transfers: null,
+			library: null,
 			keys: null,
 			sessions: null,
 			master: false,
@@ -221,12 +205,15 @@ async function bookController(req,res,next){
 	}
 }
 
+const contentRouter = new express.Router();
+contentRouter.use(validateUserMiddleware);
+contentRouter.use("/book",express.static(process.env.BOOKDIR));
+contentRouter.use("/transfer",express.static(process.env.TRANSDIR));
+
 updFS();
 
-app.use("/book/*",validateUserMiddleware);
-app.use("/transfer/*",validateUserMiddleware);
-app.use(express.static("./public"));
-
+app.use("/content",contentRouter);
+app.use(express.static('./public'));
 app.get("/", bookController);
 app.post("/session",authController);
 app.post("/request",reqController);
