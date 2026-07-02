@@ -3,6 +3,10 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const tokengen = require('./tokengen');
 
+//update to use redis later
+//this is a session authentication system btw im stu pid
+//goodness this code is hideous
+
 class keySys{
     constructor(){ //file=null
         this.keys = [];
@@ -13,14 +17,17 @@ class keySys{
         this.keys = new Array(keyfile.keys.length);
         for(let i=0;i<keyfile.keys.length;i++){
             let hash = keyfile.keys[i].key;
+
             switch(keyfile.keys[i].level ?? 0){
                 case 0:
                     //console.log(crypto.createHash('sha256').update(hash).digest('hex'));
+
                     hash = await bcrypt.hash(crypto.createHash('sha256').update(hash).digest('hex'),10);
                     break;
                 case 1:
                     hash = await bcrypt.hash(hash,10);
             }
+
             this.keys[i] = {
                 hash: hash,
                 maxsession: keyfile.keys[i].maxsession ?? 1,
@@ -30,29 +37,40 @@ class keySys{
             };
         }
     }
-    async addSession(key){
+    async addSession(key,expiryTime){
         for(let i=0;i<this.keys.length;i++){
             if(this.keys[i] && this.keys[i].usage < this.keys[i].maxsession){
                 if(await bcrypt.compare(key,this.keys[i].hash)){
+                    console.log(`+${i.toString()}:${this.keys[i].usage.toString()}:${this.tokens.length}:${(new Date(expiryTime)).toLocaleString()}`);
+
                     const token = tokengen(32);
-                    this.tokens.push({token: await bcrypt.hash(token,5),key:i,id:this.keys[i].usage});
-                    console.log("Added: "+i.toString() + ":" + this.keys[i].usage.toString());
+                    this.tokens.push({token: await bcrypt.hash(token,5),key:i,id:this.keys[i].usage,expiryTime:expiryTime});
                     this.keys[i].usage++;
+
                     return token;
                 }
             }
         }
         return null;
     }
+    async modifySession(token,expiryTime){
+        for(let i=0;i<this.tokens.length;i++){
+            if(await bcrypt.compare(token,this.tokens[i].token)){
+                this.tokens[i].expiryTime=expiryTime;
+                console.log(`^${i.toString()}:${(new Date(expiryTime)).toLocaleString()}`)
+                return true;
+            }
+        }
+        return false;
+    }
     async removeSession(token){
         for(let i=0;i<this.tokens.length;i++){
             if(await bcrypt.compare(token,this.tokens[i].token)){
                 const tkobj = this.tokens.splice(i,1)[0];
                 const keyobj = this.keys[tkobj.key];
-                if(keyobj){
-                    keyobj.unlimit && keyobj.usage--;
-                }
-                console.log("Removed: "+tkobj.key.toString() + ":" + keyobj.usage.toString())
+                if(keyobj && keyobj.unlimit) keyobj.usage--;
+
+                console.log(`-${tkobj.key.toString()}:${keyobj.usage.toString()}`)
                 return true;
             }
         }
@@ -61,16 +79,23 @@ class keySys{
     async isValid(token){
         for(let i=0;i<this.tokens.length;i++){
             if(await bcrypt.compare(token,this.tokens[i].token)){
-                const currkey = this.tokens[i].key;
-                if(this.keys[currkey]){
-                    return true;
+                //This uses index, vulnerable bug fr
+                const associatedKey = this.tokens[i].key;
+
+                if(this.keys[associatedKey]){
+                    if(this.tokens[i].expiryTime > Date.now()){
+                        return true;
+                    }else{
+                        this.tokens.splice(i,1);
+                    }
                 }else{
                     this.tokens.splice(i,1);
+
                     for(let j=this.tokens.length-1;j>=0;j--){
-                        if(this.tokens[j].key == currkey){this.tokens.splice(j,1)}
+                        if(this.tokens[j].key == associatedKey){this.tokens.splice(j,1)}
                     }
-                    return false;
                 }
+                return false;
             }
         }
         return false;
@@ -107,6 +132,14 @@ class keySys{
         for(let i=0;i<this.tokens.length;i++){
             if(await bcrypt.compare(token,this.tokens[i].token)){
                 return this.tokens[i];
+            }
+        }
+        return null;
+    }
+    async getSessionIndex(token){
+        for(let i=0;i<this.tokens.length;i++){
+            if(await bcrypt.compare(token,this.tokens[i].token)){
+                return i;
             }
         }
         return null;

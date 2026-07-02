@@ -55,7 +55,7 @@ h1 {
 	margin: 10px;
 }
 
-a, button, input[type="text"], input[type="number"], input[type="password"], .item {
+a, button, input[type="text"], input[type="number"], input[type="password"], .item, .alertMsg_Msg {
 	display: inline-block;
 	border-radius: 5px;
 	border: var(--layer2) solid 2px;
@@ -195,3 +195,15 @@ h2 {
 	box-shadow: var(--bevel),var(--lightshadow);
 }
 .panel .header {background: var(--layer0);margin: 0 -10px;padding: 20px 10px;cursor:move;user-select: none;}
+
+.alertMsg {
+	position:fixed;
+	top:30px;
+	display:flex;
+	width:100%;
+	align-items:center;
+}
+
+.alertMsg_Msg {
+	font-size:30px;
+}
