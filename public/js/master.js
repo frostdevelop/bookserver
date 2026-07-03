@@ -16,18 +16,6 @@ let offsety = 0;
 
 // Master panel should be replaced with a form-based system
 
-function showAlert(msg){
-    const alert = document.getElementsByClassName("alertMsg")[0];
-    alert.classList.add("visible");
-    alert.getElementsByClassName("alertMsg_Msg")[0].innerText = msg;
-    alert.addEventListener("click", () => {
-        alert.classList.remove("visible");
-    });
-    setTimeout(() => {
-        alert.classList.remove("visible");
-    }, 10000);
-}
-
 async function endSessionReq() {
 	const res = await fetch(frostMir + "/master", {
 		method: "POST",
@@ -40,6 +28,7 @@ async function endSessionReq() {
 		}),
 	});
 	if(res.status == 204) {
+		showSuccess("Session ended.");
 		this.parentElement.remove();
 	} else {
 		showAlert("Ending Session Error: " + res.status.toString());
@@ -58,6 +47,7 @@ async function invalidateKey() {
 		}),
 	});
 	if(res.status == 204) {
+		showSuccess("Key invalidated.");
 		this.parentElement.remove();
 	} else {
 		showAlert("Invalidation Error: " + res.status.toString());
@@ -121,13 +111,22 @@ keysub.addEventListener('click', async () => {
 		}),
 	});
 	if(res.status == 204) {
+		showSuccess("Key successfully created.");
 		const nentry = document.createElement('div');
 		nentry.className = 'item marbot';
 		const invbtn = document.createElement('button');
 		invbtn.className = 'pd-keyinvalid';
 		invbtn.value = keyNameInput.value;
 		invbtn.appendChild(document.createTextNode("INVALIDATE"));
-		nentry.innerText = `[${keyNameInput.value}] ${mstchk.checked ? "ADMIN" : "USER"}\n0/${sessinp.value} ${limchk.checked ? "Uses" : "Sessions"}`;
+		const keyText = document.createElement('span');
+		keyText.innerText = `[${keyNameInput.value}]\n0/${sessinp.value} ${limchk.checked ? "Uses" : "Sessions"}`;
+		nentry.appendChild(keyText);
+		if(mstchk.checked){
+			const adminIcon = document.createElement('span');
+			adminIcon.title = "This user is an admin.";
+			adminIcon.classList.add('icon-admin');
+			nentry.appendChild(adminIcon);
+		}
 		nentry.appendChild(invbtn);
 		keylist.appendChild(nentry);
 		invbtn.addEventListener('click', invalidateKey);

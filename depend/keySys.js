@@ -47,10 +47,12 @@ class keySys{
             if(keyObj && keyObj.usage < keyObj.maxsession){
                 if(await bcrypt.compare(key,keyObj.hash)){
                     const token = tokengen(32);
+                    const sessionID = sessionCount++;
 					
-                    console.log(`[KeySys-Session] +${sessionCount}:${name}:${token}:${(new Date(expiryTime)).toLocaleString()}`);
+                    console.log(`[KeySys-Session] +${sessionID}:${name}:${token}:${(new Date(expiryTime)).toLocaleString()}`);
                     keyObj.usage++;
-                    this.sessions.set(sessionCount++, {token: await bcrypt.hash(token,5), key: name, expiryTime: expiryTime});
+
+                    this.sessions.set(sessionID, {token: await bcrypt.hash(token,5), key: name, expiryTime: expiryTime, collector: setTimeout(()=>this.removeSessionByID(sessionID),expiryTime-Date.now())});
 
                     return token;
                 }
@@ -61,9 +63,7 @@ class keySys{
     async modifySession(token,expiryTime){
         for(let [id, sessionObj] of this.sessions.entries()){
             if(await bcrypt.compare(token, sessionObj.token)){
-                sessionObj.expiryTime = expiryTime;
-                console.log(`[KeySys-Session] ^${id.toString()}:${(new Date(expiryTime)).toLocaleString()}`)
-                return true;
+                return this.checkThenModify(id) != null;
             }
         }
         return false;
@@ -71,7 +71,10 @@ class keySys{
     async checkThenModify(token,expiryTime){
         const sessionID = await this.getSessionID(token);
 		if(sessionID != null){
-			this.sessions.get(sessionID).expiryTime=expiryTime;
+			const sessionObj = this.sessions.get(sessionID);
+            sessionObj.expiryTime=expiryTime;
+            clearTimeout(sessionObj.collector);
+            sessionObj.collector=setTimeout(()=>this.sessions.removeSessionByID(sessionID),expiryTime-Date.now());
 			console.log(`[KeySys-Session] ^${sessionID.toString()}:${(new Date(expiryTime)).toLocaleString()}`)
 		}
         return sessionID;
@@ -209,7 +212,7 @@ class keySys{
     }
     removeSessionsOfKey(keyId){
         for(let [id, sessionObj] of this.sessions.entries()){
-            if(sessionObj.key == keyId){
+            if(sessionObj.key === keyId){
                 console.log(`[KeySys-Session] -${id}:${sessionObj.key}`);
                 this.sessions.delete(id);
             }

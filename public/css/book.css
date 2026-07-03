@@ -16,6 +16,8 @@ html {
   --accent-light: #b6bfff;
   --accent-vlight: #d0d5ff;
   --accent-bg: #3d54ff22;
+  --success-color: #00ff00;
+  --success-light: #9bff9b;
   --alert-color: #ff7272;
   --alert-light: #ffd2d2;
   --main-color:rgba(255, 255, 255, 0.95);
@@ -37,7 +39,7 @@ html {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--layer4);
-  border-radius: 10px;
+  border-radius: 5px;
 }
 ::-webkit-scrollbar-thumb:hover {background:var(--layer5);}
 ::-webkit-scrollbar-thumb:active {box-shadow: 0 0 10px var(--accent-color);}
@@ -54,14 +56,14 @@ body {
 	background-color: var(--layer0);
 	font-family: var(--fontmain);
 	overflow-x: hidden;
-	color: #ffffff;
+	color: var(--main-color);
 	background-image: url("/img/background.jpg");
 	background-repeat: no-repeat;
 	background-size: cover; /*https://4kwallpapers.com/images/walls/thumbs_3t/14933.jpg*/
 }
 
 @media (max-width: 1000px) {
-	main {padding: 20px 5vw;}
+	main {padding: 50px 5vw;}
 }
 
 @keyframes fadeIn {
@@ -75,7 +77,6 @@ body {
 h1 {
 	text-align: center;
 	font-size: 50px;
-	margin: 10px;
 }
 
 button,a {
@@ -124,7 +125,7 @@ input:focus,button:hover,a:hover {
 	color: var(--accent-light);
 }
 button,input {font-size: 20px;font-weight:bold;}
-input{font-weight:200;color: white !important;}
+input{font-weight:200;color: var(--main-color) !important;}
 
 input[type="text"],input[type="password"],.marright{margin-right: 20px;}
 
@@ -170,10 +171,11 @@ button:active,a:active {
 	font-size: 20px;
 	font-weight: 200;
 	margin-bottom: 20px;
+	color: var(--mute-color);
 }
 
 footer {
-	color: grey;
+	color: var(--mute-color);
 	font-size: 13px;
 	font-weight: 300;
 	margin: 20px 0;
@@ -183,7 +185,21 @@ footer {
 	align-items: center;
 }
 
-hr {border-color: var(--main-color);opacity: 0.2;margin: 30px 0;width: 100%;}
+footer.footer-floating {
+	position: fixed;
+	left: 30px;
+	bottom: 20px;
+	text-align: left;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	z-index: 30;
+	margin: 0;
+	pointer-events: none;
+}
+
+hr {border-color: var(--pkt-border);margin: 30px 0;width: 100%;}
+hr.underline {margin: 10px 0 30px 0;}
 h3 {font-size: 30px;margin: 10px 0;font-weight:200;}
 .panel {
     box-shadow: var(--lightshadow),var(--bevel);
@@ -214,7 +230,7 @@ main {
 	inset: 0;
 	position: fixed;
 	overflow-y: auto;
-	padding: 20px 22vw;
+	padding: 80px 22vw;
     animation: fadeIn .5s ease;
 }
 main.centered {
@@ -222,6 +238,9 @@ main.centered {
 	align-content: center;
 	align-items: center;
 	justify-content: center;
+}
+span.muted {
+	color: var(--mute-color)
 }
 
 h2 {
@@ -249,7 +268,7 @@ h2 {
     height: 600px;
     resize: both;
     padding: 10px 20px;
-	z-index: 99;
+	z-index: 999;
 	padding-top: 0;
 	background: radial-gradient(circle at 100% 0%,rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
 }
@@ -271,7 +290,8 @@ h2 {
 	opacity:0;
 	transform: scale(0.9);
 	transition: all .3s ease-in-out;
-    z-index: 999;
+    z-index: 9999;
+	pointer-events: none;
 }
 
 .alertMsg.visible {
@@ -288,6 +308,13 @@ h2 {
     background: var(--pkt-bg-dark);
     border: 1px solid white;
     box-shadow: 0 0 10px var(--alert-color), 0 0 10px var(--alert-color) inset;
+	pointer-events: all;
+}
+
+.alertMsg.success .alertMsg_Msg {
+	color:var(--success-light);
+    border: 1px solid white;
+    box-shadow: 0 0 10px var(--success-color), 0 0 10px var(--success-color) inset;
 }
 .pb-text-label {
 	display:flex;
@@ -384,4 +411,13 @@ h2 {
     padding: 5px 10px;
     border-radius: 30px;
     width: max-content;
+}
+
+.icon-admin {
+	background: currentColor;
+	display: inline-block;
+	width: 2em;
+	height: 2em;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 5.33301V14.4004C27.9998 27.7314 16.0037 31.9987 16 32C16 32 4.00023 27.7334 4 14.4004V5.33301L16 0L28 5.33301ZM15.9229 17.001C13.9112 17.0166 11.9505 17.638 10.2979 18.7852C9.57843 19.2846 8.93184 19.874 8.37207 20.5352C7.85315 21.1483 7.86683 22.0429 8.39355 22.6494C10.0329 24.5363 12.4487 26 16 26C19.5516 26 21.9672 24.5357 23.6064 22.6484C24.1332 22.0418 24.1463 21.1472 23.627 20.5342C23.0339 19.8343 22.3443 19.2154 21.5742 18.6982C19.904 17.5768 17.9345 16.9855 15.9229 17.001ZM16 7C13.7909 7 12 8.79086 12 11C12 13.2091 13.7909 15 16 15C18.2091 15 20 13.2091 20 11C20 8.79086 18.2091 7 16 7Z'/%3E%3C/svg%3E") no-repeat center / contain;
+	mask: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 5.33301V14.4004C27.9998 27.7314 16.0037 31.9987 16 32C16 32 4.00023 27.7334 4 14.4004V5.33301L16 0L28 5.33301ZM15.9229 17.001C13.9112 17.0166 11.9505 17.638 10.2979 18.7852C9.57843 19.2846 8.93184 19.874 8.37207 20.5352C7.85315 21.1483 7.86683 22.0429 8.39355 22.6494C10.0329 24.5363 12.4487 26 16 26C19.5516 26 21.9672 24.5357 23.6064 22.6484C24.1332 22.0418 24.1463 21.1472 23.627 20.5342C23.0339 19.8343 22.3443 19.2154 21.5742 18.6982C19.904 17.5768 17.9345 16.9855 15.9229 17.001ZM16 7C13.7909 7 12 8.79086 12 11C12 13.2091 13.7909 15 16 15C18.2091 15 20 13.2091 20 11C20 8.79086 18.2091 7 16 7Z'/%3E%3C/svg%3E") no-repeat center / contain;
 }

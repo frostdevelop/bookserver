@@ -13,26 +13,33 @@
                 <button id="pb-reloadbtn" class="marright">Refresh</button>
             </div>
             <div class="alertMsg">
-                <div class="alertMsg_Msg"></div>
+                <div class="alertMsg_Msg" title="Click to dismiss"></div>
             </div>
+            <footer class="footer-floating">
+                <%- include('layouts/footer', {mir:mir}) -%>
+            </footer>
             <main>
                 <div class="contentContainer">
                     <h1>Pacific Book Database</h1>
                     <span id="caption">Welcome to the Pacific book database portal</span>
                     <% for(const [name,shelf] of library){ %>
                         <h2><%= name %></h2>
-                        <hr/>
-                        <div class="list">
-                            <% for(let j=0;j<shelf.books.length;j++){ %>
-                                <div class="book">
-                                    <a href="/content/<%= name %>/<%= shelf.books[j] %>"><%= shelf.books[j] %></a>
-                                </div>
-                            <% } %>
-                        </div>
+                        <hr class="underline"/>
+                        <% if(shelf.books.length > 0){ %>
+                            <div class="list">
+                                <% for(let j=0;j<shelf.books.length;j++){ %>
+                                    <div class="book">
+                                        <a href="/content/<%= name %>/<%= shelf.books[j] %>"><%= shelf.books[j] %></a>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% }else{ %>
+                            <span class="muted">This shelf seems to be empty.</span>
+                        <% } %>
                     <% } %>
-                    <%- include('layouts/footer', {mir:mir}) -%>
                 </div>
             </main>
+            <script src="<%= mir %>/js/standard.js"></script>
             <script>
                 const lgoutbtn = document.getElementById("pb-logoutbtn");
                 const reldbtn = document.getElementById("pb-reloadbtn");
@@ -41,9 +48,9 @@
                         method: "DELETE"
                     }).then(res => {
                         if (res.status == 204) {
-                            window.location.reload();
+                            showSuccessOnReload("Logout successful!");
                         } else {
-                            alert("Request Error " + res.status.toString());
+                            showAlert("Logout error: " + res.status.toString());
                         };
                     });
                 });
@@ -52,29 +59,22 @@
                         method: "HEAD"
                     }).then(res => {
                         if (res.status == 204) {
-                            window.location.reload();
+                            showSuccessOnReload("Books loaded.");
                         } else {
-                            alert("Request Error " + res.status.toString());
+                            showAlert("Reload error: " + res.status.toString());
                         };
                     });
                 });
             </script>
-            <script src="<%= mir %>/js/timeComponent.js"></script>
-            <% if(master){ %> 
-            <script src="<%= mir %>/js/master.js"></script> 
+            <% if(master){ %>
+                <script src="<%= mir %>/js/master.js"></script>
             <% } %>
         </body> 
     <% }else{ %> 
         <body>
-            <% if(loggedOut){ %>
-                <div class="alertMsg visible">
-                    <div class="alertMsg_Msg">You have been logged out.</div>
-                </div>
-            <% }else{ %>
-                <div class="alertMsg">
-                    <div class="alertMsg_Msg"></div>
-                </div>
-            <% } %>
+            <div class="alertMsg <%= loggedOut ? "visible" : "" %>">
+                <div class="alertMsg_Msg" title="Click to dismiss"><%= loggedOut ? "You have been logged out." : "" %></div>
+            </div>
             <main class="centered">
                 <div class="contentContainer">
                     <h1>Pacific Book Database</h1>
@@ -92,26 +92,17 @@
                             <button id="reqkey">Request Key</button>
                         </div>
                     </div>
-                    <%- include('layouts/footer', {mir:mir}) -%>
+                    <footer>
+                        <%- include('layouts/footer', {mir:mir}) -%>
+                    </footer>
                 </div>
             </main>
+            <script src="<%= mir %>/js/standard.js"></script>
             <script>
                 const loginbtn = document.getElementById("keylogin");
                 const logininp = document.getElementById("keyinput");
                 const reqbtn = document.getElementById("reqkey");
                 const reqinput = document.getElementById("reqinput");
-
-                function showAlert(msg){
-                    const alert = document.getElementsByClassName("alertMsg")[0];
-                    alert.classList.add("visible");
-                    alert.getElementsByClassName("alertMsg_Msg")[0].innerText = msg;
-                    alert.addEventListener("click", () => {
-                        alert.classList.remove("visible");
-                    });
-                    setTimeout(() => {
-                        alert.classList.remove("visible");
-                    }, 10000);
-                }
 
                 async function hash(msg) {
                     const encoder = new TextEncoder();
@@ -133,7 +124,7 @@
                         })
                     }).then(res => {
                         if (res.status == 204) {
-                            showAlert("Message sent!");
+                            showSuccess("Message sent!");
                         } else {
                             showAlert("Error: " + res.status.toString());
                         };
@@ -150,7 +141,7 @@
                         })
                     }).then(res => {
                         if (res.status == 204) {
-                            window.location.reload();
+                            showSuccessOnReload("Welcome back.");
                         } else {
                             showAlert("Your key is invalid or expired. Please try again.");
                         };

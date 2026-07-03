@@ -73,7 +73,7 @@ async function masterController(req,res){
 					break;
 				}
 			}
-			console.log(logMessage);
+			console.log("(Admin) "+logMessage);
 			if(process.env.MASTERLOG){
 				fs.appendFile("./logs/master.log",logMessage+"\n",err => {
 					if (err) {

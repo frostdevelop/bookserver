@@ -1,7 +1,7 @@
 <div class="panel" id="pb-AdminPanel">
 <div class="header">
     <h2>Admin Panel</h2>
-    <span>Warning: Not live</span>
+    <span class="muted">Warning: Not live</span>
 </div>
 <h3>Key Creation</h3>
 <div class="list">
@@ -52,11 +52,15 @@
     <% for(let [keyName, keyObj] of keys.entries()){ %>
         <% if(keyObj){ %> 
             <div class="item marbot">
+                <span>
                 [<%= keyName %>]
                 <%= keyName==sessions.get(sessionID).key ? " [YOU]" : "" %> 
-				<%= keyObj.master ? "ADMIN" : "USER" %>
                 <br/>
                 <%= keyObj.usage.toString() %>/<%= keyObj.maxsession.toString() %> <%= keyObj.unlimit ? "Sessions" : "Uses" %> 
+                </span>
+				<% if(keyObj.master){ %>
+                    <span class="icon-admin" title="This user is an admin."></span>
+                <% } %>
                 <button class="pb-keyinvalid" value="<%= keyName.toString() %>">INVALIDATE </button>
             </div>
         <% } %>
