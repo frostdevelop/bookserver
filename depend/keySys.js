@@ -5,15 +5,18 @@ const tokengen = require('./tokengen');
 
 //update to use redis later
 //this is a session authentication system btw im stu pid
-//goodness this code is hideous
 
 class keySys{
     constructor(){ //file=null
         this.keys = [];
         this.tokens = [];
+        this.removeInvalidSessions = this.removeInvalidSessions.bind(this);
+		setInterval(this.removeInvalidSessions,1800000);//Every 30 mins
     }
     async load(file){
-        const keyfile = JSON.parse(fs.readFileSync(file)); //"config/keys.json"
+        console.log("Loading Key File: "+file);
+
+        const keyfile = JSON.parse(fs.readFileSync(file));
         this.keys = new Array(keyfile.keys.length);
         for(let i=0;i<keyfile.keys.length;i++){
             let hash = keyfile.keys[i].key;
@@ -29,6 +32,7 @@ class keySys{
             }
 
             this.keys[i] = {
+				name: keyfile.keys[i].name,
                 hash: hash,
                 maxsession: keyfile.keys[i].maxsession ?? 1,
                 usage: 0,
@@ -41,9 +45,10 @@ class keySys{
         for(let i=0;i<this.keys.length;i++){
             if(this.keys[i] && this.keys[i].usage < this.keys[i].maxsession){
                 if(await bcrypt.compare(key,this.keys[i].hash)){
-                    console.log(`+${i.toString()}:${this.keys[i].usage.toString()}:${this.tokens.length}:${(new Date(expiryTime)).toLocaleString()}`);
-
                     const token = tokengen(32);
+					
+                    console.log(`+${this.keys[i].name}:${this.keys[i].usage.toString()}:${this.tokens.length}:${token}:${(new Date(expiryTime)).toLocaleString()}`);
+
                     this.tokens.push({token: await bcrypt.hash(token,5),key:i,id:this.keys[i].usage,expiryTime:expiryTime});
                     this.keys[i].usage++;
 
@@ -63,6 +68,14 @@ class keySys{
         }
         return false;
     }
+    async checkThenModify(token,expiryTime){
+        const sessionIndex = await this.getSessionIndex(token);
+		if(sessionIndex != null){
+			this.tokens[sessionIndex].expiryTime=expiryTime;
+			console.log(`^${sessionIndex.toString()}:${(new Date(expiryTime)).toLocaleString()}`)
+		}
+        return sessionIndex;
+    }
     async removeSession(token){
         for(let i=0;i<this.tokens.length;i++){
             if(await bcrypt.compare(token,this.tokens[i].token)){
@@ -79,7 +92,6 @@ class keySys{
     async isValid(token){
         for(let i=0;i<this.tokens.length;i++){
             if(await bcrypt.compare(token,this.tokens[i].token)){
-                //This uses index, vulnerable bug fr
                 const associatedKey = this.tokens[i].key;
 
                 if(this.keys[associatedKey]){
@@ -90,10 +102,7 @@ class keySys{
                     }
                 }else{
                     this.tokens.splice(i,1);
-
-                    for(let j=this.tokens.length-1;j>=0;j--){
-                        if(this.tokens[j].key == associatedKey){this.tokens.splice(j,1)}
-                    }
+					this.removeSessionsOfKey(associatedKey);
                 }
                 return false;
             }
@@ -108,18 +117,18 @@ class keySys{
                     if(this.keys[this.tokens[i].key].master){return true;}else{return false;};
                 }else{
                     this.tokens.splice(i,1);
-                    for(let j=this.tokens.length-1;j>=0;j--){
-                        if(this.tokens[j].key == currkey){this.tokens.splice(j,1)}
-                    }
+                    this.removeSessionsOfKey(currkey);
                     return false;
                 }
             }
         }
         return false;
     }
-    async addKey(key,maxsession=1,unlimit=true,master=false){
+    async addKey(name,key,maxsession=1,unlimit=true,master=false){
         const hash = await bcrypt.hash(key,10);
+		if(!name)name="Unnamed "+this.keys.length;
         this.keys.push({
+			name:name,
             hash:hash,
             maxsession:maxsession,
             unlimit:unlimit,
@@ -129,21 +138,32 @@ class keySys{
         return this.keys.length-1;
     }
     async getSession(token){
-        for(let i=0;i<this.tokens.length;i++){
-            if(await bcrypt.compare(token,this.tokens[i].token)){
-                return this.tokens[i];
-            }
-        }
-        return null;
+		const sessionIndex = await this.getSessionIndex(token);
+        return sessionIndex != null ? this.tokens[sessionIndex] : null;
     }
     async getSessionIndex(token){
         for(let i=0;i<this.tokens.length;i++){
             if(await bcrypt.compare(token,this.tokens[i].token)){
-                return i;
+                const associatedKey = this.tokens[i].key;
+
+                if(this.keys[associatedKey]){
+                    if(this.tokens[i].expiryTime > Date.now()){
+                        return i;
+                    }else{
+                        this.tokens.splice(i,1);
+                    }
+                }else{
+                    this.tokens.splice(i,1);
+					this.removeSessionsOfKey(associatedKey);
+                }
+                return null;
             }
         }
         return null;
     }
+	getSessionTokenByIndex(index){
+		return this.keys[this.tokens[index]?.key];
+	}
     removeToken(keyid,id){
         for(let i=0;i<this.tokens.length;i++){
             if(this.tokens[i].key == keyid && this.tokens[i].id == id){
@@ -157,13 +177,24 @@ class keySys{
         return false;
     }
     removeInvalidSessions(){
+        console.log("Removing Invalid Sessions");
         for(let i=this.tokens.length-1;i>=0;i--){
-            if(!this.keys[this.tokens[i].key]){this.tokens.splice(i,1);}
+            if(!this.keys[this.tokens[i].key]){
+                console.log(`-${this.tokens[i].key.toString()}:${this.tokens[i].id}`);
+                this.tokens.splice(i,1);
+            }else if(this.tokens[i].expiryTime < Date.now()){
+                console.log(`-${this.tokens[i].key.toString()}:${this.tokens[i].id}`);
+                this.keys[this.tokens[i].key].unlimit && this.keys[this.tokens[i].key].usage--;
+                this.tokens.splice(i,1);
+            }
         }
     }
     removeSessionsOfKey(keyId){
         for(let i=this.tokens.length-1;i>=0;i--){
-            if(this.tokens[i].key == keyId){this.tokens.splice(i,1);}
+            if(this.tokens[i].key == keyId){
+                console.log(`-${this.tokens[i].key.toString()}:${this.tokens[i].id}`);
+                this.tokens.splice(i,1);
+            }
         }
     }
 }

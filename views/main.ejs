@@ -7,24 +7,29 @@
     </head>
     <% if(verified){ %> 
         <body>
-            <h1>Pacific Book Database</h1>
-            <span id="caption">Welcome to the Pacific book database portal</span>
             <% if(master){ %> <%- include('layouts/master') -%> <% } %>
-            <button id="pb-logoutbtn" class="marright">Log Out</button>
-            <button id="pb-reloadbtn" class="marright">Refresh</button>
-            <hr/>
-            <% for(let i=0;i<library.length;i++){ %>
-            <h2><%= library[i].name %></h2>
-            <div class="list">
-                <% for(let j=0;j<library[i].books.length;j++){ %>
-                <div class="book">
-                    <a href="/content/<%= library[i].path %>/<%= library[i].books[j] %>"><%= library[i].books[j] %></a>
-                </div>
-                <% } %>
+            <div id="pb-actionContainer">
+                <button id="pb-logoutbtn" class="marright">Log Out</button>
+                <button id="pb-reloadbtn" class="marright">Refresh</button>
             </div>
-            <hr/>
-            <% } %>
-            <%- include('layouts/footer', {mir:mir}) -%>
+            <main>
+                <div class="contentContainer">
+                    <h1>Pacific Book Database</h1>
+                    <span id="caption">Welcome to the Pacific book database portal</span>
+                    <% for(let i=0;i<library.length;i++){ %>
+                        <h2><%= library[i].name %></h2>
+                        <hr/>
+                        <div class="list">
+                            <% for(let j=0;j<library[i].books.length;j++){ %>
+                            <div class="book">
+                                <a href="/content/<%= library[i].path %>/<%= library[i].books[j] %>"><%= library[i].books[j] %></a>
+                            </div>
+                            <% } %>
+                        </div>
+                    <% } %>
+                    <%- include('layouts/footer', {mir:mir}) -%>
+                </div>
+            </main>
             <script>
                 const lgoutbtn = document.getElementById("pb-logoutbtn");
                 const reldbtn = document.getElementById("pb-reloadbtn");
@@ -52,40 +57,68 @@
                 });
             </script>
             <% if(master){ %> 
-                <script src="<%= mir %>/js/master.js"></script> 
+            <script src="<%= mir %>/js/master.js"></script> 
             <% } %>
         </body> 
     <% }else{ %> 
-        <body class="mainback">
-            <div class="logincontainer">
-                <% if(loggedOut){ %>
-                    <div class="alertModal">
-                        <div class="alertModal_Modal">You have been logged out.</div>
+        <body>
+            <main class="centered">
+                <div class="contentContainer">
+                    <% if(loggedOut){ %>
+                        <div class="alertMsg visible">
+                            <div class="alertMsg_Msg">You have been logged out.</div>
+                        </div>
+                    <% }else{ %>
+                        <div class="alertMsg">
+                            <div class="alertMsg_Msg"></div>
+                        </div>
+                    <% } %>
+                    <h1>Pacific Book Database</h1>
+                    <span id="caption">Please Authenticate.</span>
+                    <div class="login panel">
+                        <h3>Login</h3>
+                        <div class="inputset">
+                            <input id="keyinput" placeholder="Your Key" type="password"></input>
+                            <button id="keylogin">Login</button>
+                        </div>
+                        <hr/>
+                        <h3>Request a key</h3>
+                        <div class="inputset">
+                            <input id="reqinput" type="text" placeholder="Message"></input>
+                            <button id="reqkey">Request Key</button>
+                        </div>
                     </div>
-                <% } %>
-                <h1>Pacific Book Database</h1>
-                <span id="caption">Please Authenticate.</span>
-                <div class="login">
-                    <h3>Login</h3>
-                    <input id="keyinput" placeholder="Your Key" type="password"></input>
-                    <button id="keylogin">Login</button>
-                    <hr/>
-                    <h3>Request a key</h3>
-                    <input id="reqinput" type="text" placeholder="Message"></input>
-                    <button id="reqkey">Request Key</button>
+                    <%- include('layouts/footer', {mir:mir}) -%>
                 </div>
-                <%- include('layouts/footer', {mir:mir}) -%>
-            </div>
+            </main>
             <script>
                 const loginbtn = document.getElementById("keylogin");
                 const logininp = document.getElementById("keyinput");
                 const reqbtn = document.getElementById("reqkey");
                 const reqinput = document.getElementById("reqinput");
+
+                function showAlert(msg){
+                    const alert = document.getElementsByClassName("alertMsg")[0];
+                    alert.classList.add("visible");
+                    alert.getElementsByClassName("alertMsg_Msg")[0].innerText = msg;
+                    alert.addEventListener("click", () => {
+                        alert.classList.remove("visible");
+                    });
+                    setTimeout(() => {
+                        alert.classList.remove("visible");
+                    }, 10000);
+                }
+
                 async function hash(msg) {
                     const encoder = new TextEncoder();
                     return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(msg)))).map(b => b.toString(16).padStart(2, '0')).join('');
-                };
+                }
+
                 reqbtn.addEventListener("click", () => {
+                    if(reqinput.value.length < 1){
+                        showAlert("Please enter a message!");
+                        return;
+                    }
                     fetch(frostMir + "/request", {
                         method: "POST",
                         headers: {
@@ -96,9 +129,9 @@
                         })
                     }).then(res => {
                         if (res.status == 204) {
-                            alert("Message sent!");
+                            showAlert("Message sent!");
                         } else {
-                            alert("Error: " + res.status.toString());
+                            showAlert("Error: " + res.status.toString());
                         };
                     });
                 });
@@ -115,7 +148,7 @@
                         if (res.status == 204) {
                             window.location.reload();
                         } else {
-                            alert("Invalid KEY!");
+                            showAlert("Your key is invalid or expired. Please try again.");
                         };
                     });
                 });

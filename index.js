@@ -47,7 +47,7 @@ async function masterController(req,res){
 			switch(req.body.type){
 				case 0:{
 					res.status(200);
-					res.end((await authsys.addKey(req.body.key,req.body.maxsessions,req.body.unlimit,req.body.master)).toString());
+					res.end((await authsys.addKey(req.body.name,req.body.key,req.body.maxsessions,req.body.unlimit,req.body.master)).toString());
 
 					const logdata = "["+(new Date()).toISOString()+"] "+req.signedCookies['token']+" :AddKey: "+req.body.key;
 					console.log(logdata);
@@ -140,29 +140,34 @@ async function logoutController(req,res){
 	}
 }
 
+async function checkAndExtendTokenTime(token,res){
+	const expiryTime = Date.now()+TOKEN_DURATION;
+
+	const index = await authsys.checkThenModify(token,expiryTime);
+	if(index != null){
+		res.cookie('token',token,{
+			httpOnly:true,
+			secure:true,
+			signed:true,
+			path:"/",
+			sameSite:"Lax",
+			maxAge:TOKEN_DURATION,
+		});
+	}else{
+		res.cookie('token','',{maxAge:0});
+	}
+	return index;
+}
+
 async function validateUserMiddleware(req,res,next){
 	const token = req.signedCookies['token'];
 
 	console.log("Token Validation Attempt:"+token);
 	
 	try{
-		if(await authsys.isValid(token)){
-			const expiryTime = Date.now()+TOKEN_DURATION;
-
-			authsys.extendToken(token,expiryTime);
-			res.cookie('token',token,{
-				httpOnly:true,
-				secure:true,
-				signed:true,
-				path:"/",
-				sameSite:"Lax",
-				maxAge:TOKEN_DURATION,
-			});
-
+		if((await checkAndExtendTokenTime(token,res)) != null){
 			next();
 		}else{
-			res.cookie('token','',{maxAge:0});
-
 			console.log("Invalid token");
 
 			notFoundController(req,res);
@@ -195,12 +200,13 @@ function reqController(req,res){
 
 async function bookController(req,res,next){
 	const token = req.signedCookies['token']; //req.cookies.token
-	console.log("Mainpage Validation:"+token);
 	const mir = req.headers['x-frost-mir'] === '1' ? '/books' : '';
 	if(token){
+		console.log("Mainpage Validation:"+token);
 		try{
-			const session = await authsys.getSessionIndex(token);
-			if(session){
+			const session = await checkAndExtendTokenTime(token,res);
+			if(session != null){
+				console.log("Authenticated: "+session);
 				res.render("main",{
 					verified: true,
 					library: library,
@@ -208,6 +214,7 @@ async function bookController(req,res,next){
 					sessions: authsys.tokens,
 					keys: authsys.keys,
 					sessionIndex: session,
+					loggedOut: false,
 					mir: mir,
 				});
 			}else{
@@ -223,13 +230,15 @@ async function bookController(req,res,next){
 			}
 		}catch(e){
 			console.error("Get session Error: " + e.stack);
-			res.status(500).send(); //"Invalid Format!"
+			res.status(400).send(); //"Invalid Format!"
 		}
 	}else{
+		console.log("Login Serve");
 		res.render("main",{
 			verified: false,
 			library: null,
 			keys: null,
+			loggedOut: false,
 			sessions: null,
 			master: false,
 			mir: mir,
@@ -252,15 +261,23 @@ app.post("/request",reqController);
 app.delete("/session",logoutController);
 app.head("/reload",reloadController);
 app.post("/master",masterController);
-app.get("*",notFoundController);
+app.use(notFoundController);
+app.use((err, req, res, next) => {
+	console.log(err);
+	res.status(500).send("Our server is having a meltdown!");
+});
 
 (async ()=>{
-	await authsys.load("./config/keys.json");
-	app.listen(process.env.PORT ?? 80, err=>{
-		if(err){
-			console.error("Error on start: "+err);
-		}else{
-			console.log("Successfully started on "+process.env.PORT.toString());
-		}
-	});
+	try{
+		await authsys.load("./config/keys.json");
+		app.listen(process.env.PORT ?? 80, err=>{
+			if(err){
+				console.error("Error on start: "+err);
+			}else{
+				console.log("Successfully started on "+process.env.PORT.toString());
+			}
+		});
+	}catch(err){
+		console.log("Authsys loading error: ",err);
+	}
 })()

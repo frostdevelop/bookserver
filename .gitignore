@@ -130,6 +130,6 @@ dist
 .pnp.*
 
 # bookserver
-transfer
+resources/*
 config
 logs/*
