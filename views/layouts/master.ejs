@@ -1,28 +1,31 @@
 <div class="panel" id="pb-AdminPanel">
-<h2 class="header">Admin Panel</h2>
+<div class="header">
+    <h2>Admin Panel</h2>
+    <span>Warning: Not live</span>
+</div>
 <h3>Key Creation</h3>
 <div class="list">
     <label class="pb-text-label">
 		Name:
-		<input placeholder="Unnamed" title="Key Name" class="marbot" type="text" id="pb-kc-keyName">
+		<input placeholder="Cool Key" title="Key Name" class="marbot" type="text" id="pb-kc-keyName">
     </label>
     <label class="pb-text-label">
 		Key:
-		<input placeholder="e.g. 12345" title="Key" class="marbot" type="password" id="pb-kc-ncinp">
+		<input placeholder="At least 8 characters" title="Key" class="marbot" type="password" id="pb-kc-ncinp">
     </label>
     <label class="pb-text-label">
 		Maximum Sessions:
-		<input placeholder="Maximum Sessions" id="pb-kc-maxinp" type="number" title="Maximum Sessions" value="1" class="marbot" min="1">
+		<input placeholder="Maximum Sessions" id="pb-kc-maxinp" type="number" title="Maximum concurrent sessions or usage" value="1" class="marbot" min="1">
     </label>
-	<label class="marbot toggle-row" title="Limit the amount of logins by the above number">
-        <span class="toggle-label">Limited</span>
+	<label class="marbot toggle-row" title="Limit the amount times this key can be used to log in.">
+        <span class="toggle-label">Limit Usage</span>
         <label class="toggle">
             <input type="checkbox" id="pb-kc-limit" checked/>
             <div class="toggle-track"></div>
         </label>
     </label>
     <label class="marbot toggle-row" title="Give user access to admin panel (Dangerous)">
-        <span class="toggle-label">Master</span>
+        <span class="toggle-label">Administrator Access</span>
         <label class="toggle">
             <input type="checkbox" id="pb-kc-master"/>
             <div class="toggle-track"></div>
@@ -31,31 +34,30 @@
     <button id="pb-kc-submit">Create</button>
 </div>
 <hr>
-<h3>Ongoing Sessions</h3>
+<h3>Ongoing Sessions (<%= sessions.size %>)</h3>
 <div class="list" id="pb-sessionlist">
-    <% for(let i=0;i<sessions.length;i++){ %> 
+    <% for(let [id, sessionObj] of sessions.entries()){ %> 
         <div class="item marbot">
-            <%= keys[sessions[i].key].name %>:<%= sessions[i].id.toString() %>
-			| <%= keys[sessions[i].key].master ? "MASTER" : "GUEST" %>
-            | EXPIRY: <%= ((sessions[i].expiryTime - Date.now())/60000).toFixed(1) %> min
-            <%= i==sessionIndex ? " [YOU]" : "" %> 
-            <button class="pb-sessionend" value="<%= sessions[i].key.toString() %>:<%= sessions[i].id.toString() %>">END </button>
+            [<%= id.toString() %>]
+            [<%= sessionObj.key %>]
+            <%= id==sessionID ? " [YOU]" : "" %> 
+            <div class="timeComponent" data-expiry-time="<%= sessionObj.expiryTime %>" title="Expires in...">Loading...</div>
+            <button class="pb-sessionend" value="<%= id.toString() %>">END </button>
         </div>
     <% } %>
 </div>
 <hr/>
-<h3>Valid Keys</h3>
+<h3>Valid Keys (<%= keys.size %>)</h3>
 <div class="list" id="pb-keylist">
-    <% for(let i=0;i<keys.length;i++){ %>
-        <% if(keys[i]){ %> 
+    <% for(let [keyName, keyObj] of keys.entries()){ %>
+        <% if(keyObj){ %> 
             <div class="item marbot">
-                [<%= keys[i].name %>]
-				<%= keys[i].master ? "MASTER" : "GUEST" %>
-                | ACTIVE:<%= keys[i].usage.toString() %> 
-                | MAX:<%= keys[i].maxsession.toString() %>
-                | <%= keys[i].unlimit ? "UNLIM" : "LIMTD" %>
-                <%= i==sessions[sessionIndex].key ? " [YOU]" : "" %> 
-                <button class="pb-keyinvalid" value="<%= i.toString() %>">INVALIDATE </button>
+                [<%= keyName %>]
+                <%= keyName==sessions.get(sessionID).key ? " [YOU]" : "" %> 
+				<%= keyObj.master ? "ADMIN" : "USER" %>
+                <br/>
+                <%= keyObj.usage.toString() %>/<%= keyObj.maxsession.toString() %> <%= keyObj.unlimit ? "Sessions" : "Uses" %> 
+                <button class="pb-keyinvalid" value="<%= keyName.toString() %>">INVALIDATE </button>
             </div>
         <% } %>
     <% } %>

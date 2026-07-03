@@ -1,6 +1,7 @@
-class shelf{
-    constructor(name,path,books=[]){
-        this.name = name;
+const fs = require('fs');
+
+class Shelf {
+    constructor(path,books=[]){
         this.path = path;
         this.books = books;
     }
@@ -10,6 +11,11 @@ class shelf{
     addBook(b){
         this.books.push(b);
     }
+    load(){
+        this.clearBooks();
+        fs.readdirSync(this.path).forEach(file=>this.addBook(file));
+        return this.books.length;
+    }
 }
 
-module.exports = shelf;
+module.exports = Shelf;

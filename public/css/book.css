@@ -16,12 +16,15 @@ html {
   --accent-light: #b6bfff;
   --accent-vlight: #d0d5ff;
   --accent-bg: #3d54ff22;
+  --alert-color: #ff7272;
+  --alert-light: #ffd2d2;
   --main-color:rgba(255, 255, 255, 0.95);
   --sub-color:rgba(255, 255, 255, 0.65);
   --dark-color:rgba(255, 255, 255, 0.25);
   --mute-color:rgba(255, 255, 255, 0.45);
   --pkt-bg:rgba(255, 255, 255, 0.025);
   --pkt-bg-1:rgba(255, 255, 255, 0.05);
+  --pkt-bg-dark:rgba(0, 0, 0, 0.5);
   --pkt-border:rgba(255, 255, 255, 0.15);
   --pkt-reflection:inset 0 1px 0 rgba(255, 255, 255, 0.25),inset 0 10px 20px rgba(255, 255, 255, 0.05),inset 0 -15px 30px rgba(0, 0, 0, 0.25);
   --pkt-shadow: rgba(0,0,0,0.4) 0px 10px 20px;
@@ -78,7 +81,7 @@ h1 {
 button,a {
 	overflow: hidden;
 }
-a, button, input[type="text"], input[type="number"], input[type="password"], .item, .alertMsg_Msg, .toggle-row, .toggle-track {
+a, button, input[type="text"], input[type="number"], input[type="password"], .timeComponent, .item, .alertMsg_Msg, .toggle-row, .toggle-track {
 	display: inline-block;
 	border-radius: 30px;
 	position: relative;
@@ -223,7 +226,6 @@ main.centered {
 
 h2 {
     font-size: 40px;
-    margin: 10px 0;
     align-self: flex-start;
 }
 
@@ -269,6 +271,7 @@ h2 {
 	opacity:0;
 	transform: scale(0.9);
 	transition: all .3s ease-in-out;
+    z-index: 999;
 }
 
 .alertMsg.visible {
@@ -279,7 +282,12 @@ h2 {
 .alertMsg_Msg {
 	font-size: 15px;
 	padding: 10px 20px;
-	color:white;
+	color:var(--alert-light);
+    width: max-content;
+    backdrop-filter: var(--pkt-filter);
+    background: var(--pkt-bg-dark);
+    border: 1px solid white;
+    box-shadow: 0 0 10px var(--alert-color), 0 0 10px var(--alert-color) inset;
 }
 .pb-text-label {
 	display:flex;
@@ -370,4 +378,10 @@ h2 {
     align-content: center;
     align-items: center;
     position: relative;
+}
+
+.timeComponent {
+    padding: 5px 10px;
+    border-radius: 30px;
+    width: max-content;
 }

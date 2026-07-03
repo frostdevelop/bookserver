@@ -12,18 +12,21 @@
                 <button id="pb-logoutbtn" class="marright">Log Out</button>
                 <button id="pb-reloadbtn" class="marright">Refresh</button>
             </div>
+            <div class="alertMsg">
+                <div class="alertMsg_Msg"></div>
+            </div>
             <main>
                 <div class="contentContainer">
                     <h1>Pacific Book Database</h1>
                     <span id="caption">Welcome to the Pacific book database portal</span>
-                    <% for(let i=0;i<library.length;i++){ %>
-                        <h2><%= library[i].name %></h2>
+                    <% for(const [name,shelf] of library){ %>
+                        <h2><%= name %></h2>
                         <hr/>
                         <div class="list">
-                            <% for(let j=0;j<library[i].books.length;j++){ %>
-                            <div class="book">
-                                <a href="/content/<%= library[i].path %>/<%= library[i].books[j] %>"><%= library[i].books[j] %></a>
-                            </div>
+                            <% for(let j=0;j<shelf.books.length;j++){ %>
+                                <div class="book">
+                                    <a href="/content/<%= name %>/<%= shelf.books[j] %>"><%= shelf.books[j] %></a>
+                                </div>
                             <% } %>
                         </div>
                     <% } %>
@@ -56,23 +59,24 @@
                     });
                 });
             </script>
+            <script src="<%= mir %>/js/timeComponent.js"></script>
             <% if(master){ %> 
             <script src="<%= mir %>/js/master.js"></script> 
             <% } %>
         </body> 
     <% }else{ %> 
         <body>
+            <% if(loggedOut){ %>
+                <div class="alertMsg visible">
+                    <div class="alertMsg_Msg">You have been logged out.</div>
+                </div>
+            <% }else{ %>
+                <div class="alertMsg">
+                    <div class="alertMsg_Msg"></div>
+                </div>
+            <% } %>
             <main class="centered">
                 <div class="contentContainer">
-                    <% if(loggedOut){ %>
-                        <div class="alertMsg visible">
-                            <div class="alertMsg_Msg">You have been logged out.</div>
-                        </div>
-                    <% }else{ %>
-                        <div class="alertMsg">
-                            <div class="alertMsg_Msg"></div>
-                        </div>
-                    <% } %>
                     <h1>Pacific Book Database</h1>
                     <span id="caption">Please Authenticate.</span>
                     <div class="login panel">

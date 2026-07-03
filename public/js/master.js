@@ -14,8 +14,21 @@ let moving = false;
 let offsetx = 0;
 let offsety = 0;
 
+// Master panel should be replaced with a form-based system
+
+function showAlert(msg){
+    const alert = document.getElementsByClassName("alertMsg")[0];
+    alert.classList.add("visible");
+    alert.getElementsByClassName("alertMsg_Msg")[0].innerText = msg;
+    alert.addEventListener("click", () => {
+        alert.classList.remove("visible");
+    });
+    setTimeout(() => {
+        alert.classList.remove("visible");
+    }, 10000);
+}
+
 async function endSessionReq() {
-	const vals = this.value.split(":");
 	const res = await fetch(frostMir + "/master", {
 		method: "POST",
 		headers: {
@@ -23,14 +36,13 @@ async function endSessionReq() {
 		},
 		body: JSON.stringify({
 			type: 1,
-			keyId: parseInt(vals[0]),
-			id: parseInt(vals[1]),
+			id: parseInt(this.value),
 		}),
 	});
 	if(res.status == 204) {
 		this.parentElement.remove();
 	} else {
-		alert("Request Error: " + res.status.toString());
+		showAlert("Ending Session Error: " + res.status.toString());
 	}
 }
 
@@ -42,13 +54,13 @@ async function invalidateKey() {
 		},
 		body: JSON.stringify({
 			type: 2,
-			ind: parseInt(this.value)
+			name: this.value,
 		}),
 	});
 	if(res.status == 204) {
 		this.parentElement.remove();
 	} else {
-		alert("Request Error: " + res.status.toString());
+		showAlert("Invalidation Error: " + res.status.toString());
 	}
 }
 
@@ -85,9 +97,13 @@ document.addEventListener('touchmove', movePanel);
 sessinp.addEventListener('input', () => {
 	sessinp.value = Math.max(1, parseInt(sessinp.value));
 });
+
 keysub.addEventListener('click', async () => {
-	if(keyinp.value.length == 0) {
-		alert("No key entered!");
+	if(keyNameInput.value.length == 0) {
+        showAlert("No key name entered!");
+        return;
+    }else if(keyinp.value.length < 8) {
+		showAlert("Key must be at least 8 characters long!");
 		return;
 	}
 	const res = await fetch(frostMir + "/master", {
@@ -104,20 +120,19 @@ keysub.addEventListener('click', async () => {
 			master: mstchk.checked,
 		}),
 	});
-	if(res.status == 200) {
+	if(res.status == 204) {
 		const nentry = document.createElement('div');
 		nentry.className = 'item marbot';
 		const invbtn = document.createElement('button');
 		invbtn.className = 'pd-keyinvalid';
-		invbtn.value = await res.text(); //parseInt(keylist[keylist.children.length-1].value)+1
+		invbtn.value = keyNameInput.value;
 		invbtn.appendChild(document.createTextNode("INVALIDATE"));
-		nentry.appendChild(document.createTextNode(invbtn.value + " " + (mstchk.checked ? "MASTER" : "GUEST") + " SESSN:0 MAX:" + sessinp.value + (limchk.checked ? " LIMTD" : " UNLIM")));
+		nentry.innerText = `[${keyNameInput.value}] ${mstchk.checked ? "ADMIN" : "USER"}\n0/${sessinp.value} ${limchk.checked ? "Uses" : "Sessions"}`;
 		nentry.appendChild(invbtn);
 		keylist.appendChild(nentry);
 		invbtn.addEventListener('click', invalidateKey);
-		keyinvalids = keylist.getElementsByClassName('pb-keyinvalid');
 	} else {
-		alert("Request Error: " + res.status.toString());
+		showAlert("Key Creation Error! The key already exists.");
 	}
 });
 for(let i = 0; i < sessionends.length; i++) {

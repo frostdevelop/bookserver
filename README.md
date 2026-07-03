@@ -1,7 +1,11 @@
-# bookserver
+# BookServer
 Book/General files hosting server!
-(Users need to create a "book" folder with books in them in the public folder)
-## Setup
-In order to start this, you must create:
-- config
-- logs
+## Setting up BookServer
+- Run setup.sh
+- Run "npm run dev"
+- Your server is now open on localhost!
+- Your default password is "12345"
+- You can add books in ./shelves/general
+## Configuring BookServer
+- Edit config files in ./config
+- Edit .env

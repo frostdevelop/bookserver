@@ -1,19 +1,21 @@
 const express = require('express');
-const fs = require('fs');
 const cookieParse = require('cookie-parser');
 const dotenv = require('dotenv');
 const reqLogMiddleware = require('./depend/logReqs.middleware');
 const keySys = require('./depend/keySys');
 const ejs = require("ejs");
-const PacificShelf = require('./depend/shelf');
-//Later make a sqlite config for different "shelves" on the books
-//Turn library to a class later for routing logic
-const library = [new PacificShelf('Books','book'),new PacificShelf('Transfer','trans')];
+const Library = require('./depend/library');
+const fs = require('fs');
 
-let authsys = new keySys;
+//Later make a sqlite config for different "shelves" on the books and allow upload
+//Add server sent events for admin panel
+
 dotenv.config();
 
+let authsys = new keySys(parseInt(process.env.SESSION_CLEANUP_INTERVAL));
 if(!process.env.SECRET){console.error('Error: Missing cookie secret!');process.exit(0);}
+
+const library = new Library('./config/library.json');
 
 const app = express();
 
@@ -24,73 +26,63 @@ app.set('view engine','ejs');
 if(process.env.LOG ?? false) app.use(reqLogMiddleware);
 if(process.env.PROXY ?? false) app.enable('trust proxy');
 
-const TOKEN_DURATION = 15*60*1000;
-
-function updFS(){
-	library[0].clearBooks();
-	library[1].clearBooks();
-	fs.readdirSync(process.env.BOOKDIR).forEach(file=>library[0].addBook(file));
-	fs.readdirSync(process.env.TRANSDIR).forEach(file=>library[1].addBook(file));
-}
+const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT);
 
 function reloadController(req,res){
 	//Maybe I should require auth here
-	console.log("Reloading files...");
-	updFS();
+	library.loadShelves();
 	res.status(204).send();
 }
 
 async function masterController(req,res){
-	console.log(req.signedCookies['token']+" Requests Master");
+	console.log("(Admin) Validating "+req.signedCookies['token']);
 	try{
-		if(await authsys.isMaster(req.signedCookies['token'])){
+		const sessionID = await checkAndExtendTokenTime(req.signedCookies['token'],res);
+		if(sessionID != null && authsys.isMasterByID(sessionID)){
+			let logMessage = "["+(new Date()).toISOString()+"] "+sessionID.toString()+":"+authsys.getUserByID(sessionID).toString()+":"+req.ip;
 			switch(req.body.type){
 				case 0:{
-					res.status(200);
-					res.end((await authsys.addKey(req.body.name,req.body.key,req.body.maxsessions,req.body.unlimit,req.body.master)).toString());
-
-					const logdata = "["+(new Date()).toISOString()+"] "+req.signedCookies['token']+" :AddKey: "+req.body.key;
-					console.log(logdata);
-					if(process.env.MASTERLOG){
-						fs.appendFile("./logs/master.log",logdata+"\n",err => {
-							if (err) console.error("Master Log Error: "+err);
-						});
+					logMessage += " +Key "+req.body.key;
+					if(await authsys.addKey(req.body.name,req.body.key,req.body.maxsession,req.body.unlimit,req.body.master)){
+						res.status(204).send();
+					}else{
+						logMessage += " (Failed)";
+						res.status(400).send();
 					}
 					break;
 				}
 				case 1:{
-					if(authsys.removeToken(req.body.keyId,req.body.id)){
+					logMessage += " -Session "+req.body.id;
+					if(authsys.removeSessionByID(req.body.id)){
 						res.status(204).send();
 					}else{
+						logMessage += " (Failed)";
 						res.status(400).send();
 					};
-					const logdata = "["+(new Date()).toISOString()+"] "+req.signedCookies['token']+" :RemoveSess: "+req.body.keyId;
-					console.log(logdata);
-					if(process.env.MASTERLOG){
-						fs.appendFile("./logs/master.log",logdata+"\n",err => {
-							if (err) console.error("Master Log Error: "+err);
-						});
-					}
 					break;
 				}
 				case 2:{
-					authsys.keys[req.body.ind] = null;
-					await authsys.removeSessionsOfKey(req.body.ind);
-					res.status(204).send();
-					const logdata = "["+(new Date()).toISOString()+"] "+req.signedCookies['token']+" :RemoveKey: "+req.body.ind.toString();
-					console.log(logdata);
-					if(process.env.MASTERLOG){
-						fs.appendFile("./logs/master.log",logdata+"\n",err => {
-							if (err) {
-								console.error("Master Log Error: "+err);
-							}
-						});
+					logMessage += " -Key "+req.body.name;
+					if(authsys.removeKey(req.body.name)){
+						authsys.removeSessionsOfKey(req.body.name);
+						res.status(204).send();
+					}else{
+						logMessage += " (Failed)";
+						res.status(400).send();
 					}
 					break;
 				}
 			}
+			console.log(logMessage);
+			if(process.env.MASTERLOG){
+				fs.appendFile("./logs/master.log",logMessage+"\n",err => {
+					if (err) {
+						console.error("Master Log Error: "+err);
+					}
+				});
+			}
 		}else{
-			console.log("Master Denied");
+			console.log("(Admin) Not Admin: "+req.signedCookies['token']);
 			res.status(403).send();
 		}
 	}catch(e){
@@ -101,9 +93,9 @@ async function masterController(req,res){
 } 
 
 async function authController(req,res){
-	console.log("Authenticating: "+req.body.key);
+	console.log("(Auth) Authenticating: "+req.body.key);
 	try{
-		const expiryTime = Date.now()+TOKEN_DURATION;
+		const expiryTime = Date.now()+SESSION_TIMEOUT;
 		const token = await authsys.addSession(req.body.key,expiryTime);
 		if(token){
 			res.cookie('token',token,{
@@ -112,7 +104,7 @@ async function authController(req,res){
 				signed:true,
 				path:"/",
 				sameSite:"Lax",
-				maxAge:TOKEN_DURATION,
+				maxAge:SESSION_TIMEOUT,
 			});
 			res.status(204).send();
 		}else{
@@ -126,7 +118,7 @@ async function authController(req,res){
 
 async function logoutController(req,res){
 	const token = req.signedCookies['token'];
-	console.log("Logout: "+token);
+	console.log("(Auth) Logout: "+token);
 	try{
 		if(await authsys.removeSession(token)){
 			res.cookie('token','',{maxAge:0});
@@ -141,7 +133,7 @@ async function logoutController(req,res){
 }
 
 async function checkAndExtendTokenTime(token,res){
-	const expiryTime = Date.now()+TOKEN_DURATION;
+	const expiryTime = Date.now()+SESSION_TIMEOUT;
 
 	const index = await authsys.checkThenModify(token,expiryTime);
 	if(index != null){
@@ -151,7 +143,7 @@ async function checkAndExtendTokenTime(token,res){
 			signed:true,
 			path:"/",
 			sameSite:"Lax",
-			maxAge:TOKEN_DURATION,
+			maxAge:SESSION_TIMEOUT,
 		});
 	}else{
 		res.cookie('token','',{maxAge:0});
@@ -162,13 +154,14 @@ async function checkAndExtendTokenTime(token,res){
 async function validateUserMiddleware(req,res,next){
 	const token = req.signedCookies['token'];
 
-	console.log("Token Validation Attempt:"+token);
+	console.log("(Auth) Authenticating: "+token);
 	
 	try{
 		if((await checkAndExtendTokenTime(token,res)) != null){
+			console.log("(Auth) Authenticated: "+token);
 			next();
 		}else{
-			console.log("Invalid token");
+			console.log("(Auth) Invalid token: "+token);
 
 			notFoundController(req,res);
 		}
@@ -191,7 +184,7 @@ function reqController(req,res){
 	fs.appendFile("./logs/tokenrequests.txt",
 		`${Date.now().toString(36)}:${req.ip}:${req.body.msg}\n`,
 		err => {
-			if(err) console.error("Token Error: "+err);
+			if(err) console.error("Token Request Error: "+err);
 		}
 	);
 	
@@ -199,31 +192,30 @@ function reqController(req,res){
 }
 
 async function bookController(req,res,next){
-	const token = req.signedCookies['token']; //req.cookies.token
+	const token = req.signedCookies['token'];
 	const mir = req.headers['x-frost-mir'] === '1' ? '/books' : '';
 	if(token){
-		console.log("Mainpage Validation:"+token);
+		console.log("(Main) Authenticating "+token);
 		try{
-			const session = await checkAndExtendTokenTime(token,res);
-			if(session != null){
-				console.log("Authenticated: "+session);
+			const sessionID = await authsys.getSessionID(token);
+			if(sessionID != null){
+				console.log("(Main) Authenticated: "+sessionID);
 				res.render("main",{
 					verified: true,
-					library: library,
-					master: authsys.keys[authsys.tokens[session].key].master,
-					sessions: authsys.tokens,
+					library: library.shelves,
+					master: authsys.isMasterByID(sessionID),
+					sessions: authsys.sessions,
 					keys: authsys.keys,
-					sessionIndex: session,
+					sessionID: sessionID,
 					loggedOut: false,
 					mir: mir,
 				});
 			}else{
+				console.log("(Main) Invalid token: "+token);
 				res.render("main",{
 					verified: false,
-					library: null,
 					keys: null,
 					sessions: null,
-					master: false,
 					loggedOut: true,
 					mir: mir,
 				});
@@ -233,14 +225,11 @@ async function bookController(req,res,next){
 			res.status(400).send(); //"Invalid Format!"
 		}
 	}else{
-		console.log("Login Serve");
 		res.render("main",{
 			verified: false,
-			library: null,
 			keys: null,
 			loggedOut: false,
 			sessions: null,
-			master: false,
 			mir: mir,
 		});
 	}
@@ -248,10 +237,8 @@ async function bookController(req,res,next){
 
 const contentRouter = new express.Router();
 contentRouter.use(validateUserMiddleware);
-contentRouter.use("/book",express.static(process.env.BOOKDIR));
-contentRouter.use("/transfer",express.static(process.env.TRANSDIR));
-
-updFS();
+library.addShelvesToRouter(contentRouter);
+library.loadShelves();
 
 app.use("/content",contentRouter);
 app.use(express.static('./public'));
