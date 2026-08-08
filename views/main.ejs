@@ -26,7 +26,7 @@
                         <h2><%= name %></h2>
                         <hr class="underline"/>
                         <% if(shelf.books.length > 0){ %>
-                            <div class="list">
+                            <div class="bookList">
                                 <% for(let j=0;j<shelf.books.length;j++){ %>
                                     <div class="book">
                                         <a href="/content/<%= name %>/<%= shelf.books[j] %>"><%= shelf.books[j] %></a>
@@ -34,7 +34,7 @@
                                 <% } %>
                             </div>
                         <% }else{ %>
-                            <span class="muted">This shelf seems to be empty.</span>
+                            <span class="muted">This shelf is empty :(</span>
                         <% } %>
                     <% } %>
                 </div>

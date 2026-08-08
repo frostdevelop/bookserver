@@ -74,7 +74,7 @@ class keySys{
 			const sessionObj = this.sessions.get(sessionID);
             sessionObj.expiryTime=expiryTime;
             clearTimeout(sessionObj.collector);
-            sessionObj.collector=setTimeout(()=>this.sessions.removeSessionByID(sessionID),expiryTime-Date.now());
+            sessionObj.collector=setTimeout(()=>this.removeSessionByID(sessionID),expiryTime-Date.now());
 			console.log(`[KeySys-Session] ^${sessionID.toString()}:${(new Date(expiryTime)).toLocaleString()}`)
 		}
         return sessionID;

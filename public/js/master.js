@@ -3,6 +3,7 @@ const adminheader = adminpanel.getElementsByClassName('header')[0];
 const keyinp = document.getElementById('pb-kc-ncinp');
 const sessinp = document.getElementById('pb-kc-maxinp');
 const keyNameInput = document.getElementById('pb-kc-keyName');
+const keyConfirmInput = document.getElementById('pb-kc-keyConfirm');
 const limchk = document.getElementById('pb-kc-limit');
 const mstchk = document.getElementById('pb-kc-master');
 const keysub = document.getElementById('pb-kc-submit');
@@ -94,6 +95,9 @@ keysub.addEventListener('click', async () => {
         return;
     }else if(keyinp.value.length < 8) {
 		showAlert("Key must be at least 8 characters long!");
+		return;
+	}else if (keyinp.value != keyConfirmInput.value){
+		showAlert("The keys don't match :(");
 		return;
 	}
 	const res = await fetch(frostMir + "/master", {

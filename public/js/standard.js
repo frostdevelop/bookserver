@@ -19,10 +19,13 @@ alertContainer.addEventListener("click", () => {
     alertContainer.classList.remove("visible");
 });
 
+let alertTimeout;
 function showAlert(msg){
     alertContainer.classList.add("visible");
     alertMessage.innerText = msg;
-    setTimeout(() => {
+
+    alertTimeout && clearTimeout(alertTimeout);
+    alertTimeout = setTimeout(() => {
         alert.classList.remove("visible");
     }, 10000);
 }

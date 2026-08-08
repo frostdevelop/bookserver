@@ -62,10 +62,6 @@ body {
 	background-size: cover; /*https://4kwallpapers.com/images/walls/thumbs_3t/14933.jpg*/
 }
 
-@media (max-width: 1000px) {
-	main {padding: 50px 5vw;}
-}
-
 @keyframes fadeIn {
   0% { opacity: 0 }
 }
@@ -154,8 +150,8 @@ button:active,a:active {
 }
 
 .book {
-	margin: 10px 0;
-	display: block;
+	/* margin: 10px 0; */
+	display: grid;
 	width: 100%;
 	animation: riseIn .4s ease-out;
 }
@@ -186,16 +182,18 @@ footer {
 }
 
 footer.footer-floating {
-	position: fixed;
-	left: 30px;
-	bottom: 20px;
-	text-align: left;
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	z-index: 30;
-	margin: 0;
-	pointer-events: none;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  z-index: 30;
+  pointer-events: none;
+  padding: 20px 30px;
+  width: 100%;
+  background: linear-gradient(to top,rgba(0, 0, 0, 0.28),transparent);
 }
 
 hr {border-color: var(--pkt-border);margin: 30px 0;width: 100%;}
@@ -230,7 +228,7 @@ main {
 	inset: 0;
 	position: fixed;
 	overflow-y: auto;
-	padding: 80px 22vw;
+	padding: 80px 15vw;
     animation: fadeIn .5s ease;
 }
 main.centered {
@@ -325,11 +323,14 @@ h2 {
 }
 #pb-actionContainer {
 	display:flex;
-	justify-content: flex-end;
+	justify-content: flex-start;
 	align-items: center;
 	position: fixed;
-	top: 30px;
-	left: 40px;
+	top: 0;
+	left: 0;
+	width:100%;
+	padding: 30px 40px;
+	background: linear-gradient(to bottom,rgba(0, 0, 0, 0.6),transparent);
 	z-index: 99;
 }
 .footer_img {
@@ -420,4 +421,26 @@ h2 {
 	height: 2em;
 	-webkit-mask: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 5.33301V14.4004C27.9998 27.7314 16.0037 31.9987 16 32C16 32 4.00023 27.7334 4 14.4004V5.33301L16 0L28 5.33301ZM15.9229 17.001C13.9112 17.0166 11.9505 17.638 10.2979 18.7852C9.57843 19.2846 8.93184 19.874 8.37207 20.5352C7.85315 21.1483 7.86683 22.0429 8.39355 22.6494C10.0329 24.5363 12.4487 26 16 26C19.5516 26 21.9672 24.5357 23.6064 22.6484C24.1332 22.0418 24.1463 21.1472 23.627 20.5342C23.0339 19.8343 22.3443 19.2154 21.5742 18.6982C19.904 17.5768 17.9345 16.9855 15.9229 17.001ZM16 7C13.7909 7 12 8.79086 12 11C12 13.2091 13.7909 15 16 15C18.2091 15 20 13.2091 20 11C20 8.79086 18.2091 7 16 7Z'/%3E%3C/svg%3E") no-repeat center / contain;
 	mask: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 5.33301V14.4004C27.9998 27.7314 16.0037 31.9987 16 32C16 32 4.00023 27.7334 4 14.4004V5.33301L16 0L28 5.33301ZM15.9229 17.001C13.9112 17.0166 11.9505 17.638 10.2979 18.7852C9.57843 19.2846 8.93184 19.874 8.37207 20.5352C7.85315 21.1483 7.86683 22.0429 8.39355 22.6494C10.0329 24.5363 12.4487 26 16 26C19.5516 26 21.9672 24.5357 23.6064 22.6484C24.1332 22.0418 24.1463 21.1472 23.627 20.5342C23.0339 19.8343 22.3443 19.2154 21.5742 18.6982C19.904 17.5768 17.9345 16.9855 15.9229 17.001ZM16 7C13.7909 7 12 8.79086 12 11C12 13.2091 13.7909 15 16 15C18.2091 15 20 13.2091 20 11C20 8.79086 18.2091 7 16 7Z'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+.bookList {
+	display:grid;
+	grid-template-columns: 1fr 1fr;
+	width:100%;
+	gap:25px;
+	margin-bottom: 50px;
+}
+
+@media (width <= 768px) {
+	.bookList{
+		grid-template-columns: 1fr;
+	}
+	main{
+		padding: 80px 5vw;
+	}
+	#pb-AdminPanel{
+		top:unset;
+		bottom:20px;
+		width:200px;
+	}
 }
